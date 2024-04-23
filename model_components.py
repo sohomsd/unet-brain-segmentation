@@ -15,6 +15,8 @@ class ConvBlock(nn.Module):
     def forward(self, x):
         out = self.relu1(self.conv1(x))
         return self.relu2(self.conv2(out))
+    
+
 # Inception Module: 3 conv and 1 pool
 class InceptionModule(nn.Module):
     def __init__(self, in_channels, f_1x1, f_3x3_r, f_3x3, f_5x5_r, f_5x5, f_pool_proj):
