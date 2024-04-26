@@ -1,8 +1,23 @@
 import torch
 import torch.nn as nn
 from torchvision.transforms.functional import center_crop
-from model_components import *
 
+# Convolution Block with 2 Convolution and ReLU Activations
+class ConvBlock(nn.Module):
+    def __init__(self, in_ch, out_ch, kernel_size, stride=1):
+        super(ConvBlock, self).__init__()
+        self.conv1 = nn.Conv2d(in_channels=in_ch, out_channels=out_ch,
+                               kernel_size=kernel_size, stride=stride)
+        self.relu1 = nn.ReLU()
+        self.conv2 = nn.Conv2d(in_channels=out_ch, out_channels=out_ch, 
+                               kernel_size=kernel_size, stride=stride)
+        self.relu2 = nn.ReLU()
+
+    def forward(self, x):
+        out = self.relu1(self.conv1(x))
+        return self.relu2(self.conv2(out))
+
+# Decode (Expanding) block that integrates skip connection concatenation
 class DecodeBlock(nn.Module):
     def __init__(self, in_ch, out_ch):
         super(DecodeBlock, self).__init__()
@@ -17,6 +32,7 @@ class DecodeBlock(nn.Module):
         return self.convblock(torch.cat([out, cropped_skip], 1))
 
 
+# Original U-net model
 class BaseUnet(nn.Module):
     def __init__(self, in_ch, out_ch):
         super(BaseUnet, self).__init__()
