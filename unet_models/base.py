@@ -33,9 +33,9 @@ class DecodeBlock(nn.Module):
 
 
 # Original U-net model
-class BaseUnet(nn.Module):
+class Unet(nn.Module):
     def __init__(self, in_ch, out_ch):
-        super(BaseUnet, self).__init__()
+        super(Unet, self).__init__()
         
         # Max pooling used in Unet descent
         self.maxpool = nn.MaxPool2d(kernel_size=2, stride=2)
