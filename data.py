@@ -10,7 +10,7 @@ def load_BraTS_image(data_path, slice=None):
     img = nib.load(data_path).get_fdata()
     if slice != None:
         img = img[:,:,slice]
-    return torch.tensor(img)
+    return torch.tensor(img, dtype=torch.float32)
 
 # Function to change expand segmentation data to 3 channels
 # Note that class label 4 corresponds to the 3rd channel
@@ -19,7 +19,7 @@ def expand_BraTS_segmentation(data_path, slice=None, labels=[0, 1, 2, 4]):
     
     label_channels = []
     for label in labels:
-        curr_ch = torch.zeros(seg_img.shape)
+        curr_ch = torch.zeros(seg_img.shape, dtype=torch.float32)
         curr_ch[seg_img == label] = 1
         label_channels.append(curr_ch)
 
