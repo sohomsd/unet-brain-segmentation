@@ -6,16 +6,18 @@ from torchvision.transforms.functional import center_crop
 class ConvBlock(nn.Module):
     def __init__(self, in_ch, out_ch, kernel_size, stride=1, padding=1):
         super(ConvBlock, self).__init__()
+        self.relu = nn.ReLU()
+
         self.conv1 = nn.Conv2d(in_channels=in_ch, out_channels=out_ch,
                                kernel_size=kernel_size, stride=stride, padding=padding)
-        self.relu1 = nn.ReLU()
+        self.batchnorm1 = nn.BatchNorm2d(out_ch)
         self.conv2 = nn.Conv2d(in_channels=out_ch, out_channels=out_ch, 
                                kernel_size=kernel_size, stride=stride, padding=padding)
-        self.relu2 = nn.ReLU()
+        self.batchnorm2 = nn.BatchNorm2d(out_ch)
 
     def forward(self, x):
-        out = self.relu1(self.conv1(x))
-        return self.relu2(self.conv2(out))
+        out = self.batchnorm1(self.relu(self.conv1(x)))
+        return self.batchnorm2(self.relu(self.conv2(out)))
 
 # Decode (Expanding) block that integrates skip connection concatenation
 class DecodeBlock(nn.Module):

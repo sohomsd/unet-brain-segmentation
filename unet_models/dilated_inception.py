@@ -22,13 +22,16 @@ class DilatedInceptionModule(nn.Module):
         self.l3_conv1 = nn.Conv2d(in_ch, branch_out_ch, kernel_size=1)
         self.l3_conv3 = nn.Conv2d(branch_out_ch, branch_out_ch, kernel_size=3, stride=1, padding=3,
                                   dilation=3)
+        
+        # Batchnorm
+        self.batchnorm = nn.BatchNorm2d(3*branch_out_ch)
 
     def forward(self, x):
         l1 = self.relu(self.l1_conv3(self.relu(self.l1_conv1(x))))
         l2 = self.relu(self.l2_conv3(self.relu(self.l2_conv1(x))))
         l3 = self.relu(self.l3_conv3(self.relu(self.l3_conv1(x))))
         
-        return torch.cat([l1, l2, l3], 1)
+        return self.batchnorm(torch.cat([l1, l2, l3], 1))
 
 
 # Decode (Expanding) block for DIU-net that integrates skip connection concatenation
