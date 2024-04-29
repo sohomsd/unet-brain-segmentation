@@ -3,6 +3,7 @@ import numpy as np
 import nibabel as nib
 import torch
 from torch.utils.data import Dataset, DataLoader
+import matplotlib.pyplot as plt
 
 # Function to load in .nii image data as a torch tensor
 def load_BraTS_image(data_path, slice=None, crop_indices=(37,197,28,220)):
@@ -55,6 +56,14 @@ class BraTSDataset(Dataset):
 
         contrast_img = torch.stack([t1, t1ce, t2, flair])
         seg_img = expand_BraTS_segmentation(prefix + "_seg.nii", self.slice, self.crop_indices)
+
+        # label_channels = []
+        # for label in [0, 1, 2, 4]:
+        #     curr_ch = torch.zeros(seg_img.shape, dtype=torch.float32)
+        #     curr_ch[seg_img == label] = 1
+        #     label_channels.append(curr_ch)
+
+        # seg_img = torch.stack(label_channels)
 
         if self.img_transform:
             contrast_img = self.img_transform(contrast_img)
