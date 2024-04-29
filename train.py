@@ -35,7 +35,7 @@ def train_model(model:nn.Module, optimizer, train_loader:DataLoader, val_loader:
             loss.backward()
             optimizer.step()
 
-            loss_sum += loss
+            loss_sum += loss.detach().item()
 
         # Append average training loss to train_loss list
         history["train_loss"].append(loss_sum/len(train_loader))
@@ -51,7 +51,7 @@ def train_model(model:nn.Module, optimizer, train_loader:DataLoader, val_loader:
             output = model(image)
             loss = criterion(output, torch.argmax(target, 1))
 
-            loss_sum += loss
+            loss_sum += loss.detach().item()
         
         # Append average validation loss to validation loss list
         history["val_loss"].append(loss_sum/len(val_loader))
@@ -76,14 +76,14 @@ if __name__ == "__main__":
     train_data = BraTSDataset(data_root_dir, slice=77, img_dirs=train_img_dirs, img_transform=img_transform)
     val_data = BraTSDataset(data_root_dir, slice=77, img_dirs=test_img_dirs, img_transform=img_transform)
 
-    train_loader = DataLoader(train_data, batch_size=32, shuffle=True, pin_memory=True)
-    val_loader = DataLoader(val_data, batch_size=32, shuffle=True, pin_memory=True)
+    train_loader = DataLoader(train_data, batch_size=32, shuffle=True)
+    val_loader = DataLoader(val_data, batch_size=32, shuffle=True)
 
     for model_name, model in models.items():
         print(f"Training {model_name}:\n")
 
         optimizer = Adam(model.parameters())
-        model_weights, history = train_model(model, optimizer, train_loader, val_loader, num_epochs=1)
+        model_weights, history = train_model(model, optimizer, train_loader, val_loader, num_epochs=25)
 
         weights_dir = "results/model_weights"
         if not os.path.exists(weights_dir):
@@ -91,7 +91,7 @@ if __name__ == "__main__":
 
         torch.save(model_weights, os.path.join(weights_dir, f"{model_name}_weights.pt"))
 
-        history_dir = "results/model_weights"
+        history_dir = "results/training_history"
         if not os.path.exists(history_dir):
             os.makedirs(history_dir)
 
