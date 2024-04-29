@@ -2,7 +2,7 @@ import os
 import numpy as np
 import nibabel as nib
 import torch
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, DataLoader
 
 # Function to load in .nii image data as a torch tensor
 def load_BraTS_image(data_path, slice=None, crop_indices=(37,197,28,220)):
@@ -61,3 +61,19 @@ class BraTSDataset(Dataset):
 
         return contrast_img, seg_img
 
+
+# Function to get the mean and standard deviation per channel of a BraTS dataset
+def get_distribution_stats(dataset: BraTSDataset, batch_size=32):
+    loader = DataLoader(dataset, batch_size=32)
+    num_imgs = 0
+    mean = 0
+    var = 0
+    for imgs, _ in loader:
+        num_imgs += imgs.size(0)
+        mean += torch.mean(imgs, dim=(2,3)).sum(0)
+        var += torch.var(imgs, dim=(2,3)).sum(0)
+
+    mean /= num_imgs
+    std = torch.sqrt(var / num_imgs)
+
+    return mean, std

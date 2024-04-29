@@ -4,11 +4,11 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from torch.optim import Adam
-from torchvision.transforms import Compose, Resize
+from torchvision.transforms import Normalize
 from tqdm import tqdm
 import pickle
 
-from data import BraTSDataset
+from data import BraTSDataset, get_distribution_stats
 from unet_models.base import Unet
 from unet_models.dilated_inception import DIUnet
 
@@ -68,11 +68,13 @@ if __name__ == "__main__":
     
     data_root_dir = "BraTS2020_TrainingData/MICCAI_BraTS2020_TrainingData"
     total_data = BraTSDataset(data_root_dir, slice=77)
+    mean, std = get_distribution_stats(total_data)
+    img_transform = Normalize(mean, std)
 
     train_img_dirs, test_img_dirs = train_test_split(os.listdir(data_root_dir), test_size=0.2, 
                                                      shuffle=True, random_state=42)
-    train_data = BraTSDataset(data_root_dir, slice=77, img_dirs=train_img_dirs)
-    val_data = BraTSDataset(data_root_dir, slice=77, img_dirs=test_img_dirs)
+    train_data = BraTSDataset(data_root_dir, slice=77, img_dirs=train_img_dirs, img_transform=img_transform)
+    val_data = BraTSDataset(data_root_dir, slice=77, img_dirs=test_img_dirs, img_transform=img_transform)
 
     train_loader = DataLoader(train_data, batch_size=32, shuffle=True, pin_memory=True)
     val_loader = DataLoader(val_data, batch_size=32, shuffle=True, pin_memory=True)
@@ -81,7 +83,7 @@ if __name__ == "__main__":
         print(f"Training {model_name}:\n")
 
         optimizer = Adam(model.parameters())
-        model_weights, history = train_model(model, optimizer, train_loader, val_loader, num_epochs=20)
+        model_weights, history = train_model(model, optimizer, train_loader, val_loader, num_epochs=1)
 
         weights_dir = "results/model_weights"
         if not os.path.exists(weights_dir):
