@@ -3,19 +3,21 @@ import numpy as np
 import nibabel as nib
 import torch
 from torch.utils.data import Dataset
-from torch.nn.functional import one_hot
 
 # Function to load in .nii image data as a torch tensor
-def load_BraTS_image(data_path, slice=None):
+def load_BraTS_image(data_path, slice=None, crop_indices=(37,197,28,220)):
     img = nib.load(data_path).get_fdata()
     if slice != None:
         img = img[:,:,slice]
+    if crop_indices != None:
+        u, d, l, r = crop_indices
+        img = img[u:d, l:r]
     return torch.tensor(img, dtype=torch.float32)
 
 # Function to change expand segmentation data to 3 channels
 # Note that class label 4 corresponds to the 3rd channel
-def expand_BraTS_segmentation(data_path, slice=None, labels=[0, 1, 2, 4]):
-    seg_img = load_BraTS_image(data_path, slice)
+def expand_BraTS_segmentation(data_path, slice=None, labels=[0, 1, 2, 4], crop_indices=(37,197,28,220)):
+    seg_img = load_BraTS_image(data_path, slice, crop_indices)
     
     label_channels = []
     for label in labels:
@@ -27,13 +29,15 @@ def expand_BraTS_segmentation(data_path, slice=None, labels=[0, 1, 2, 4]):
 
 # BraTS Dataset class
 class BraTSDataset(Dataset):
-    def __init__(self, root_dir, slice=None, contrast_transform=None, seg_transform=None):
+    def __init__(self, root_dir, slice=None, img_dirs=None, crop_indices=(37,197,28,220), img_transform=None):
         self.slice = slice
-        self.contrast_transform = contrast_transform
-        self.seg_transform = seg_transform
+        self.crop_indices = crop_indices
+        self.img_transform = img_transform
         self.image_path_prefixes = []
 
-        img_dirs = os.listdir(root_dir)
+        if img_dirs == None:
+            img_dirs = os.listdir(root_dir)
+        
         for dir in img_dirs:
             self.image_path_prefixes.append(root_dir + "/" + dir + f"/{dir}")
 
@@ -44,18 +48,16 @@ class BraTSDataset(Dataset):
 
     def __getitem__(self, idx):
         prefix = self.image_path_prefixes[idx]
-        t1 = load_BraTS_image(prefix + "_t1.nii", self.slice)
-        t1ce = load_BraTS_image(prefix + "_t1ce.nii", self.slice)
-        t2 = load_BraTS_image(prefix + "_t2.nii", self.slice)
-        flair = load_BraTS_image(prefix + "_flair.nii", self.slice)
+        t1 = load_BraTS_image(prefix + "_t1.nii", self.slice, self.crop_indices)
+        t1ce = load_BraTS_image(prefix + "_t1ce.nii", self.slice, self.crop_indices)
+        t2 = load_BraTS_image(prefix + "_t2.nii", self.slice, self.crop_indices)
+        flair = load_BraTS_image(prefix + "_flair.nii", self.slice, self.crop_indices)
 
         contrast_img = torch.stack([t1, t1ce, t2, flair])
-        seg_img = expand_BraTS_segmentation(prefix + "_seg.nii", self.slice)
+        seg_img = expand_BraTS_segmentation(prefix + "_seg.nii", self.slice, self.crop_indices)
 
-        if self.contrast_transform:
-            contrast_img = self.contrast_transform(contrast_img)
-
-        if self.seg_transform:
-            seg_img = self.seg_transform(seg_img)
+        if self.img_transform:
+            contrast_img = self.img_transform(contrast_img)
 
         return contrast_img, seg_img
+
